@@ -201,3 +201,105 @@ fn main() -> io::Result<()> {
 
     disable_raw_mode()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Matrix;
+    use super::ZerosTo;
+    use crate::KeyCode;
+
+    macro_rules! move_zeros {
+        ($init:expr, $zeros_to:expr, $result:expr) => {
+            assert_eq!(Matrix::move_zeros(&$init, $zeros_to), $result)
+        };
+    }
+
+    macro_rules! merge {
+        ($init:expr, $key:expr, $result:expr) => {
+            assert_eq!(Matrix::merge(&$init, $key), $result)
+        };
+    }
+
+    #[test]
+    fn test_move_zeros_right() {
+        move_zeros!([0, 0, 0, 0], ZerosTo::Right, [0, 0, 0, 0]);
+        move_zeros!([2, 0, 0, 0], ZerosTo::Right, [2, 0, 0, 0]);
+        move_zeros!([0, 2, 0, 0], ZerosTo::Right, [2, 0, 0, 0]);
+        move_zeros!([0, 0, 2, 0], ZerosTo::Right, [2, 0, 0, 0]);
+        move_zeros!([0, 0, 0, 2], ZerosTo::Right, [2, 0, 0, 0]);
+        move_zeros!([2, 2, 0, 0], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([2, 0, 2, 0], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([2, 0, 0, 2], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([0, 2, 2, 0], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([0, 2, 0, 2], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([0, 0, 2, 2], ZerosTo::Right, [2, 2, 0, 0]);
+        move_zeros!([2, 2, 2, 0], ZerosTo::Right, [2, 2, 2, 0]);
+        move_zeros!([2, 2, 0, 2], ZerosTo::Right, [2, 2, 2, 0]);
+        move_zeros!([2, 2, 2, 2], ZerosTo::Right, [2, 2, 2, 2]);
+
+        move_zeros!([0, 2, 4, 0], ZerosTo::Right, [2, 4, 0, 0]);
+        move_zeros!([0, 4, 2, 0], ZerosTo::Right, [4, 2, 0, 0]);
+        move_zeros!([2, 4, 0, 0], ZerosTo::Right, [2, 4, 0, 0]);
+        move_zeros!([0, 0, 2, 4], ZerosTo::Right, [2, 4, 0, 0]);
+    }
+
+    #[test]
+    fn test_move_zeros_left() {
+        move_zeros!([0, 0, 0, 0], ZerosTo::Left, [0, 0, 0, 0]);
+        move_zeros!([2, 0, 0, 0], ZerosTo::Left, [0, 0, 0, 2]);
+        move_zeros!([0, 2, 0, 0], ZerosTo::Left, [0, 0, 0, 2]);
+        move_zeros!([0, 0, 2, 0], ZerosTo::Left, [0, 0, 0, 2]);
+        move_zeros!([0, 0, 0, 2], ZerosTo::Left, [0, 0, 0, 2]);
+        move_zeros!([2, 2, 0, 0], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([2, 0, 2, 0], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([2, 0, 0, 2], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([0, 2, 2, 0], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([0, 2, 0, 2], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([0, 0, 2, 2], ZerosTo::Left, [0, 0, 2, 2]);
+        move_zeros!([2, 2, 2, 0], ZerosTo::Left, [0, 2, 2, 2]);
+        move_zeros!([2, 2, 0, 2], ZerosTo::Left, [0, 2, 2, 2]);
+        move_zeros!([2, 2, 2, 2], ZerosTo::Left, [2, 2, 2, 2]);
+
+        move_zeros!([0, 2, 4, 0], ZerosTo::Left, [0, 0, 2, 4]);
+        move_zeros!([0, 4, 2, 0], ZerosTo::Left, [0, 0, 4, 2]);
+
+        move_zeros!([2, 4, 0, 0], ZerosTo::Left, [0, 0, 2, 4]);
+        move_zeros!([0, 0, 2, 4], ZerosTo::Left, [0, 0, 2, 4]);
+    }
+
+    #[test]
+    fn test_merge_left() {
+        merge!([2, 2, 0, 0], KeyCode::Left, [4, 0, 0, 0]);
+        merge!([0, 2, 2, 0], KeyCode::Left, [4, 0, 0, 0]);
+        merge!([2, 0, 0, 2], KeyCode::Left, [4, 0, 0, 0]);
+        merge!([0, 2, 0, 2], KeyCode::Left, [4, 0, 0, 0]);
+        merge!([0, 2, 0, 2], KeyCode::Left, [4, 0, 0, 0]);
+
+        merge!([2, 2, 4, 0], KeyCode::Left, [4, 0, 4, 0]);
+        merge!([2, 4, 2, 0], KeyCode::Left, [2, 4, 2, 0]);
+        merge!([4, 2, 2, 0], KeyCode::Left, [4, 4, 0, 0]);
+
+        merge!([2, 2, 2, 0], KeyCode::Left, [4, 0, 2, 0]);
+        merge!([2, 2, 2, 2], KeyCode::Left, [4, 0, 4, 0]);
+    }
+
+    #[test]
+    fn test_merge_right() {
+        merge!([2, 2, 0, 0], KeyCode::Right, [0, 0, 0, 4]);
+        merge!([0, 2, 2, 0], KeyCode::Right, [0, 0, 0, 4]);
+        merge!([2, 0, 0, 2], KeyCode::Right, [0, 0, 0, 4]);
+        merge!([0, 2, 0, 2], KeyCode::Right, [0, 0, 0, 4]);
+        merge!([0, 2, 0, 2], KeyCode::Right, [0, 0, 0, 4]);
+
+        merge!([0, 2, 4, 0], KeyCode::Right, [0, 0, 2, 4]);
+        merge!([2, 4, 0, 0], KeyCode::Right, [0, 0, 2, 4]);
+        merge!([0, 0, 2, 4], KeyCode::Right, [0, 0, 2, 4]);
+
+        merge!([2, 2, 4, 0], KeyCode::Right, [0, 0, 4, 4]);
+        merge!([2, 4, 2, 0], KeyCode::Right, [0, 2, 4, 2]);
+        merge!([4, 2, 2, 0], KeyCode::Right, [0, 4, 0, 4]);
+        merge!([2, 2, 2, 0], KeyCode::Right, [0, 2, 0, 4]);
+
+        merge!([2, 2, 2, 2], KeyCode::Right, [0, 4, 0, 4]);
+    }
+}
