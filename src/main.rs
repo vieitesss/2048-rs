@@ -152,15 +152,12 @@ impl Matrix {
 
         let mut index = 0;
         while index < count {
-            if index == count - 1 {
+            if index == count - 1 || non_zero[index] != non_zero[index + 1] {
                 moved[index] = non_zero[index];
                 index += 1;
             } else if non_zero[index] == non_zero[index + 1] {
                 moved[index] = non_zero[index] * 2;
                 index += 2;
-            } else {
-                moved[index] = non_zero[index];
-                index += 1;
             }
         }
 
