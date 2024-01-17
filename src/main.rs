@@ -300,37 +300,14 @@ fn main() -> io::Result<()> {
     execute!(stdout(), Hide)?;
     enable_raw_mode()?;
 
-    let mut matrix = Matrix::default();
-    matrix.update().unwrap();
+    let mut game = Game::new();
+    // let mut matrix = Matrix::default();
+    // matrix.update().unwrap();
 
-    let mut exit = false;
-    while !exit {
-        match read()? {
-            Event::FocusGained => {}
-            Event::FocusLost => {}
-            Event::Key(KeyEvent { code, .. }) => match code {
-                KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
-                    matrix.shift(code);
-                }
-                KeyCode::Char('q') | KeyCode::Esc => {
-                    exit = true;
-                }
-                _ => {
-                    continue;
-                }
-            },
-            Event::Mouse(_) => {}
-            Event::Paste(_) => {}
-            Event::Resize(_, _) => {}
-        }
-
-        if matrix.changed {
-            matrix.update()?;
-            matrix.changed = false;
-        } else if matrix.has_no_moves() {
-            writeln!(stdout(), "Game over!\r")?;
-            exit = true;
-        }
+    // let mut exit = false;
+    while game.state != State::GameOver {
+        // game.update()?;
+        game.handle_input()?;
     }
 
     execute!(stdout(), Show)?;
