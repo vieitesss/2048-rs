@@ -27,16 +27,18 @@ struct Matrix {
     width: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 enum State {
+    Starting,
     Running,
     GameOver,
 }
 
 trait GameTrait {
-    fn new() -> Self;
     fn update(&mut self) -> io::Result<()>;
-    fn handle_input(&mut self, key: KeyCode);
+    fn handle_input(&mut self) -> io::Result<()>;
+    fn draw(&self);
+    fn exit(&self);
 }
 
 #[derive(Debug)]
@@ -45,20 +47,68 @@ struct Game {
     state: State,
 }
 
-impl GameTrait for Game {
+impl Game {
     fn new() -> Self {
-        Self {
+        let mut game = Self {
             matrix: Matrix::default(),
             state: State::Running,
-        }
-    }
+        };
 
+        game.update.unwrap();
+
+        game
+    }
+}
+
+impl GameTrait for Game {
     fn update(&mut self) -> io::Result<()> {
-        self.matrix.update()
+        utils::clear_screen()?;
+        self.matrix.spawn_number();
+        writeln!(stdout(), "{}\r", self).expect("could not write update");
+
+        Ok(())
     }
 
-    fn handle_input(&mut self, key: KeyCode) {
+    fn handle_input(&mut self) -> io::Result<()> {
+        match read()? {
+            Event::FocusGained => {}
+            Event::FocusLost => {}
+            Event::Key(KeyEvent { code, .. }) => match code {
+                KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
+                    self.matrix.shift(code);
+                }
+                KeyCode::Char('q') | KeyCode::Esc => {
+                    self.state = State::GameOver;
+                }
+                _ => {}
+            },
+            Event::Mouse(_) => {}
+            Event::Paste(_) => {}
+            Event::Resize(_, _) => {}
+        }
+
+        if self.matrix.changed {
+            self.update()?;
+            self.matrix.changed = false;
+        } else if self.matrix.has_no_moves() {
+            self.state = State::GameOver;
+        }
+
+        Ok(())
+    }
+
+    fn draw(&self) {
+        writeln!(stdout(), "{}\r", self).expect("could not write update");
+    }
+
+    fn exit(&self) {
         todo!()
+    }
+}
+
+impl Display for Game {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.matrix)
     }
 }
 
