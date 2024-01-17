@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use crossterm::{
     cursor::{Hide, MoveToColumn, MoveToRow, Show},
     event::{read, Event, KeyCode, KeyEvent},
@@ -5,11 +8,12 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
 };
 use rand::distributions::{Bernoulli, Distribution};
-use rand::Rng;
 use std::{
     fmt::Display,
     io::{self, stdout, Write},
 };
+
+mod utils;
 
 #[derive(Copy, Clone)]
 enum ZerosTo {
@@ -21,49 +25,72 @@ enum ZerosTo {
 struct Matrix {
     data: Vec<Vec<u32>>,
     changed: bool,
+    width: usize,
 }
 
-// TODO: test movements
-impl Matrix {
-    fn new() -> Matrix {
-        Matrix {
-            data: vec![vec![0; 4]; 4],
-            changed: false,
+#[derive(Debug)]
+enum State {
+    Running,
+    GameOver,
+}
+
+trait GameTrait {
+    fn new() -> Self;
+    fn update(&mut self) -> io::Result<()>;
+    fn handle_input(&mut self, key: KeyCode);
+}
+
+#[derive(Debug)]
+struct Game {
+    matrix: Matrix,
+    state: State,
+}
+
+impl GameTrait for Game {
+    fn new() -> Self {
+        Self {
+            matrix: Matrix::default(),
+            state: State::Running,
         }
     }
 
+    fn update(&mut self) -> io::Result<()> {
+        self.matrix.update()
+    }
+
+    fn handle_input(&mut self, key: KeyCode) {
+        todo!()
+    }
+}
+
+impl Default for Matrix {
+    fn default() -> Self {
+        Self {
+            data: vec![vec![0; 4]; 4],
+            changed: false,
+            width: 4,
+        }
+    }
+}
+
+trait MatrixTrait {
+    fn spawn_number(&mut self);
+    fn update(&mut self) -> io::Result<()>;
+    fn shift(&mut self, dir: KeyCode);
+    fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32>;
+    fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32>;
+    fn has_no_moves(&self) -> bool;
+}
+
+impl MatrixTrait for Matrix {
     fn spawn_number(&mut self) {
-        let cell = self.get_random_empty_cell();
+        let cell = utils::get_random_empty_cell(&self.data, self.width);
 
         let random_value = Bernoulli::new(0.75)
             .unwrap()
             .sample(&mut rand::thread_rng());
 
-        writeln!(stdout(), "{:?}", cell).unwrap();
-
         self.data[cell.0][cell.1] = if random_value { 2 } else { 4 };
-    }
-
-    fn get_random_empty_cell(&self) -> (usize, usize) {
-        let empty_cells = self.get_empty_cells();
-
-        assert!(empty_cells.len() > 0);
-
-        empty_cells[rand::thread_rng().gen_range(0..empty_cells.len())]
-    }
-
-    fn get_empty_cells(&self) -> Vec<(usize, usize)> {
-        assert_eq!(self.data.len(), 4);
-
-        let mut empty_cells = Vec::new();
-        for i in 0..4 {
-            for j in 0..4 {
-                if self.data[i][j] == 0 {
-                    empty_cells.push((i, j));
-                }
-            }
-        }
-        empty_cells
     }
 
     fn update(&mut self) -> io::Result<()> {
@@ -80,12 +107,8 @@ impl Matrix {
         Ok(())
     }
 
-    fn rev(vector: &[u32]) -> Vec<u32> {
-        vector.iter().rev().map(|x| *x).collect()
-    }
-
     fn shift(&mut self, dir: KeyCode) {
-        assert_eq!(self.data.len(), 4);
+        let width = self.width;
 
         let zeros_to = match dir {
             KeyCode::Up | KeyCode::Left => ZerosTo::Right,
@@ -95,10 +118,10 @@ impl Matrix {
 
         match dir {
             KeyCode::Right | KeyCode::Left => {
-                for i in 0..4 {
+                for i in 0..width {
                     let numbers = &self.data[i];
-                    let merged = Matrix::merge(&numbers, dir);
-                    let moved = Matrix::move_zeros(&merged, zeros_to);
+                    let merged = self.merge(numbers, dir);
+                    let moved = self.move_zeros(&merged, zeros_to);
 
                     if moved != *numbers {
                         self.data[i] = moved;
@@ -107,17 +130,17 @@ impl Matrix {
                 }
             }
             KeyCode::Up | KeyCode::Down => {
-                for i in 0..4 {
-                    let mut numbers = [0; 4];
-                    for j in 0..4 {
+                for i in 0..width {
+                    let mut numbers = vec![0; width];
+                    for (j, _) in numbers.clone().iter_mut().enumerate().take(width) {
                         numbers[j] = self.data[j][i];
                     }
 
-                    let merged = Matrix::merge(&numbers, dir);
-                    let moved = Matrix::move_zeros(&merged, zeros_to);
+                    let merged = self.merge(&numbers, dir);
+                    let moved = self.move_zeros(&merged, zeros_to);
 
                     if moved != numbers {
-                        for j in 0..4 {
+                        for (j, _) in moved.iter().enumerate().take(width) {
                             self.data[j][i] = moved[j];
                         }
                         self.changed = true;
@@ -128,23 +151,23 @@ impl Matrix {
         }
     }
 
-    fn merge(numbers: &[u32], dir: KeyCode) -> Vec<u32> {
-        assert_eq!(numbers.len(), 4);
-        let mut non_zero: Vec<_> = numbers.iter().filter(|&&x| x != 0).map(|x| *x).collect();
+    fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32> {
+        let mut non_zero: Vec<_> = numbers.iter().filter(|&&x| x != 0).copied().collect();
         let count = non_zero.len();
 
         if non_zero.is_empty() || count == 1 {
             return numbers.to_vec();
         }
 
-        let mut moved = vec![0; 4];
+        let width = self.width;
+        let mut moved = vec![0; width];
 
         // revert the non-zero numbers
         let mut revert = false;
         match dir {
             KeyCode::Left | KeyCode::Up => {}
             KeyCode::Right | KeyCode::Down => {
-                non_zero = Matrix::rev(&non_zero);
+                non_zero = utils::rev(&non_zero);
                 revert = true;
             }
             _ => panic!("invalid direction"),
@@ -162,35 +185,29 @@ impl Matrix {
         }
 
         if revert {
-            moved = Matrix::rev(&moved);
+            moved = utils::rev(&moved);
         }
 
         moved
     }
 
-    fn move_zeros(numbers: &[u32], dir: ZerosTo) -> Vec<u32> {
-        assert_eq!(numbers.len(), 4);
+    fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32> {
+        let non_zeros: Vec<u32> = numbers.iter().filter(|&&x| x != 0).copied().collect();
 
-        let non_zeros: Vec<u32> = numbers.iter().filter(|&&x| x != 0).map(|x| *x).collect();
-
-        if non_zeros.len() == 0 {
+        if non_zeros.is_empty() {
             return numbers.to_vec();
         }
 
-        let mut moved = vec![0; 4];
+        let width = self.width;
+        let mut moved = vec![0; width];
 
         match dir {
             ZerosTo::Right => {
-                for i in 0..non_zeros.len() {
-                    moved[i] = non_zeros[i];
-                }
+                moved[..non_zeros.len()].copy_from_slice(&non_zeros[..]);
             }
             ZerosTo::Left => {
-                let mut index = 0;
-                for i in 4 - non_zeros.len()..4 {
-                    moved[i] = non_zeros[index];
-                    index += 1;
-                }
+                moved[(width - non_zeros.len())..width]
+                    .copy_from_slice(&non_zeros[..(width - (width - non_zeros.len()))]);
             }
         }
 
@@ -198,13 +215,13 @@ impl Matrix {
     }
 
     fn has_no_moves(&self) -> bool {
-        assert_eq!(self.data.len(), 4);
-        if self.get_empty_cells().len() > 0 {
+        if utils::get_empty_cells(&self.data, self.width).is_empty() {
             return false;
         }
 
-        for i in 0..4 {
-            for j in 0..4 {
+        let width = self.width;
+        for i in 0..width {
+            for j in 0..width {
                 if i < 3 && self.data[i][j] == self.data[i + 1][j] {
                     return false;
                 }
@@ -220,13 +237,14 @@ impl Matrix {
 
 impl Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 0..4 {
-            for j in 0..4 {
+        let width = self.width;
+        for i in 0..width {
+            for j in 0..width {
                 let current = self.data[i][j];
                 if current == 0 {
-                    write!(f, "{:<4}", ".".to_string())?;
+                    write!(f, "{:<5}", ".".to_string())?;
                 } else {
-                    write!(f, "{:<4}", current)?;
+                    write!(f, "{:<5}", current)?;
                 }
             }
             write!(f, "\r\n")?;
@@ -238,17 +256,16 @@ impl Display for Matrix {
 
 fn main() -> io::Result<()> {
     execute!(stdout(), Hide)?;
-    let mut matrix = Matrix::new();
-
     enable_raw_mode()?;
 
+    let mut matrix = Matrix::default();
     matrix.update().unwrap();
 
     let mut exit = false;
     while !exit {
         match read()? {
-            Event::FocusGained => todo!(),
-            Event::FocusLost => todo!(),
+            Event::FocusGained => {}
+            Event::FocusLost => {}
             Event::Key(KeyEvent { code, .. }) => match code {
                 KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
                     matrix.shift(code);
@@ -260,9 +277,9 @@ fn main() -> io::Result<()> {
                     continue;
                 }
             },
-            Event::Mouse(_) => todo!(),
-            Event::Paste(_) => todo!(),
-            Event::Resize(_, _) => todo!(),
+            Event::Mouse(_) => {}
+            Event::Paste(_) => {}
+            Event::Resize(_, _) => {}
         }
 
         if matrix.changed {
