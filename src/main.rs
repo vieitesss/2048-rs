@@ -2,12 +2,11 @@
 #![allow(unused_variables)]
 
 use crossterm::{
-    cursor::{Hide, MoveToColumn, MoveToRow, Show},
+    cursor::{Hide, Show},
     event::{read, Event, KeyCode, KeyEvent},
-    execute, queue,
-    terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode},
 };
-use rand::distributions::{Bernoulli, Distribution};
 use std::{
     fmt::Display,
     io::{self, stdout, Write},
