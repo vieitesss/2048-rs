@@ -124,7 +124,7 @@ impl Default for Matrix {
 
 trait MatrixTrait {
     fn spawn_number(&mut self);
-    fn update(&mut self) -> io::Result<()>;
+    fn update_vector(&self, vector: &[u32], dir: KeyCode, zeros_to: ZerosTo) -> (Vec<u32>, bool);
     fn shift(&mut self, dir: KeyCode);
     fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32>;
     fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32>;
@@ -134,26 +134,16 @@ trait MatrixTrait {
 impl MatrixTrait for Matrix {
     fn spawn_number(&mut self) {
         let cell = utils::get_random_empty_cell(&self.data, self.width);
-
-        let random_value = Bernoulli::new(0.75)
-            .unwrap()
-            .sample(&mut rand::thread_rng());
+        let random_value = utils::get_random_bool(0.75);
 
         self.data[cell.0][cell.1] = if random_value { 2 } else { 4 };
     }
 
-    fn update(&mut self) -> io::Result<()> {
-        self.spawn_number();
-        queue!(
-            stdout(),
-            Clear(ClearType::All),
-            MoveToRow(0),
-            MoveToColumn(0)
-        )
-        .unwrap();
-        writeln!(stdout(), "{}\r", self).expect("could not write update");
+    fn update_vector(&self, vector: &[u32], dir: KeyCode, zeros_to: ZerosTo) -> (Vec<u32>, bool) {
+        let merged = self.merge(vector, dir);
+        let moved = self.move_zeros(&merged, zeros_to);
 
-        Ok(())
+        (moved.clone(), moved != *vector)
     }
 
     fn shift(&mut self, dir: KeyCode) {
@@ -168,11 +158,11 @@ impl MatrixTrait for Matrix {
         match dir {
             KeyCode::Right | KeyCode::Left => {
                 for i in 0..width {
-                    let numbers = &self.data[i];
-                    let merged = self.merge(numbers, dir);
-                    let moved = self.move_zeros(&merged, zeros_to);
+                    let (moved, changed) = self.update_vector(&self.data[i], dir, zeros_to);
+                    // let merged = self.merge(numbers, dir);
+                    // let moved = self.move_zeros(&merged, zeros_to);
 
-                    if moved != *numbers {
+                    if changed {
                         self.data[i] = moved;
                         self.changed = true;
                     }
@@ -181,14 +171,17 @@ impl MatrixTrait for Matrix {
             KeyCode::Up | KeyCode::Down => {
                 for i in 0..width {
                     let mut numbers = vec![0; width];
-                    for (j, _) in numbers.clone().iter_mut().enumerate().take(width) {
-                        numbers[j] = self.data[j][i];
-                    }
+                    numbers
+                        .iter_mut()
+                        .enumerate()
+                        .for_each(|(j, x)| *x = self.data[j][i]);
 
-                    let merged = self.merge(&numbers, dir);
-                    let moved = self.move_zeros(&merged, zeros_to);
+                    let (moved, changed) = self.update_vector(&numbers, dir, zeros_to);
 
-                    if moved != numbers {
+                    // let merged = self.merge(&numbers, dir);
+                    // let moved = self.move_zeros(&merged, zeros_to);
+
+                    if changed {
                         for (j, _) in moved.iter().enumerate().take(width) {
                             self.data[j][i] = moved[j];
                         }
