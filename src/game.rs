@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::{Hide, Show},
+    cursor::{self, Hide, Show},
     event::{read, Event, KeyCode, KeyEvent},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode},
@@ -25,7 +25,7 @@ pub trait Playable {
     fn init(&mut self) -> io::Result<()>;
     fn update(&mut self) -> io::Result<()>;
     fn handle_input(&mut self) -> io::Result<()>;
-    fn draw(&self);
+    fn draw(&self) -> io::Result<()>;
     fn exit() -> io::Result<()>;
 }
 
@@ -56,7 +56,7 @@ impl Playable for Game {
     fn update(&mut self) -> io::Result<()> {
         utils::clear_screen()?;
         self.matrix.spawn_number();
-        self.draw();
+        self.draw()?;
 
         Ok(())
     }
@@ -92,8 +92,19 @@ impl Playable for Game {
         Ok(())
     }
 
-    fn draw(&self) {
+    fn draw(&self) -> io::Result<()> {
+        let (columns, rows) = utils::get_window_size();
+        let bounds = self.matrix.get_width_on_draw();
+        let width = bounds.0 as u16;
+        let tall = bounds.1 as u16;
+        execute!(
+            stdout(),
+            cursor::MoveTo(columns / 2 - width / 2, rows / 2 - tall / 2)
+        )?;
+
         writeln!(stdout(), "{}\r", self).expect("could not write update");
+
+        Ok(())
     }
 
     fn exit() -> io::Result<()> {

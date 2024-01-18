@@ -56,3 +56,7 @@ pub fn clear_screen() -> Result<(), io::Error> {
 
     Ok(())
 }
+
+pub fn get_window_size() -> (u16, u16) {
+    crossterm::terminal::size().expect("could not get window size")
+}

@@ -3,7 +3,7 @@ use std::{
     io::{stdout, Write},
 };
 
-use crossterm::event::KeyCode;
+use crossterm::{cursor, event::KeyCode, execute};
 
 use crate::utils;
 
@@ -27,6 +27,22 @@ impl Default for Matrix {
             changed: false,
             width: 4,
         }
+    }
+}
+
+impl Matrix {
+    pub fn get_width_on_draw(&self) -> (usize, usize) {
+        let width = self.width;
+        (width * 5 + width + 1, 2 * width + 1)
+    }
+
+    fn move_to_next_line(&self) {
+        execute!(
+            stdout(),
+            cursor::MoveDown(1),
+            cursor::MoveLeft(self.get_width_on_draw().0 as u16),
+        )
+        .expect("could not move cursor");
     }
 }
 
@@ -184,7 +200,8 @@ impl MatrixTrait for Matrix {
 impl Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let width = self.width;
-        writeln!(f, "┌─────┬─────┬─────┬─────┐\r")?;
+        write!(f, "┌─────┬─────┬─────┬─────┐")?;
+        self.move_to_next_line();
         for i in 0..width {
             write!(f, "│")?;
             for j in 0..width {
@@ -195,9 +212,10 @@ impl Display for Matrix {
                     write!(f, "{:^5}│", current)?;
                 }
             }
-            writeln!(f, "\r")?;
+            self.move_to_next_line();
             if i != width - 1 {
-                writeln!(f, "├─────┼─────┼─────┼─────┤\r")?;
+                write!(f, "├─────┼─────┼─────┼─────┤")?;
+                self.move_to_next_line();
             }
         }
 
