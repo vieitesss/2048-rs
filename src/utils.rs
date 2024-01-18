@@ -46,7 +46,7 @@ fn rand_in_range(min: usize, max: usize) -> usize {
 }
 
 pub fn clear_screen() -> Result<(), io::Error> {
-    let res = queue!(
+    queue!(
         stdout(),
         Clear(ClearType::All),
         MoveToRow(0),
