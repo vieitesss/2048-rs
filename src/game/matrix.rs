@@ -50,8 +50,9 @@ impl MatrixTrait for Matrix {
     fn update_vector(&self, vector: &[u32], dir: KeyCode, zeros_to: ZerosTo) -> (Vec<u32>, bool) {
         let merged = self.merge(vector, dir);
         let moved = self.move_zeros(&merged, zeros_to);
+        let changed = moved != *vector;
 
-        (moved.clone(), moved != *vector)
+        (moved, changed)
     }
 
     fn shift(&mut self, dir: KeyCode) {
@@ -67,8 +68,6 @@ impl MatrixTrait for Matrix {
             KeyCode::Right | KeyCode::Left => {
                 for i in 0..width {
                     let (moved, changed) = self.update_vector(&self.data[i], dir, zeros_to);
-                    // let merged = self.merge(numbers, dir);
-                    // let moved = self.move_zeros(&merged, zeros_to);
 
                     if changed {
                         self.data[i] = moved;
@@ -85,9 +84,6 @@ impl MatrixTrait for Matrix {
                         .for_each(|(j, x)| *x = self.data[j][i]);
 
                     let (moved, changed) = self.update_vector(&numbers, dir, zeros_to);
-
-                    // let merged = self.merge(&numbers, dir);
-                    // let moved = self.move_zeros(&merged, zeros_to);
 
                     if changed {
                         for (j, _) in moved.iter().enumerate().take(width) {
