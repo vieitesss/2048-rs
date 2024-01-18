@@ -153,7 +153,7 @@ impl MatrixTrait for Matrix {
             }
             ZerosTo::Left => {
                 moved[(width - non_zeros.len())..width]
-                    .copy_from_slice(&non_zeros[..(width - (width - non_zeros.len()))]);
+                    .copy_from_slice(&non_zeros[..]);
             }
         }
 
