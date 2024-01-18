@@ -22,7 +22,7 @@ pub enum State {
     GameOver,
 }
 
-pub trait GameTrait {
+pub trait Playable {
     fn init(&mut self) -> io::Result<()>;
     fn update(&mut self) -> io::Result<()>;
     fn handle_input(&mut self) -> io::Result<()>;
@@ -45,7 +45,7 @@ impl Game {
     }
 }
 
-impl GameTrait for Game {
+impl Playable for Game {
     fn init(&mut self) -> io::Result<()> {
         execute!(stdout(), Hide)?;
         enable_raw_mode()?;
