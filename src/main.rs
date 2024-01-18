@@ -3,7 +3,7 @@
 
 use std::io;
 
-use game::{Game, State, GameTrait};
+use game::{Game, GameTrait, State};
 
 mod game;
 mod utils;

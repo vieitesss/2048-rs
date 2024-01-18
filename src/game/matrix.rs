@@ -1,4 +1,7 @@
-use std::{fmt::Display, io::{stdout, Write}};
+use std::{
+    fmt::Display,
+    io::{stdout, Write},
+};
 
 use crossterm::event::KeyCode;
 
