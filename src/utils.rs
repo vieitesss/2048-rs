@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::{MoveToColumn, MoveToRow},
+    cursor,
     queue,
     terminal::{Clear, ClearType},
 };
@@ -49,8 +49,7 @@ pub fn clear_screen() -> Result<(), io::Error> {
     queue!(
         stdout(),
         Clear(ClearType::All),
-        MoveToRow(0),
-        MoveToColumn(0)
+        cursor::MoveTo(0, 0),
     )?;
 
     stdout().flush().expect("could not flush stdout");
