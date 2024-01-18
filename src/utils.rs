@@ -37,6 +37,10 @@ pub fn get_empty_cells(data: &[Vec<u32>], width: usize) -> Vec<(usize, usize)> {
         .collect()
 }
 
+pub fn get_non_zeros(vector: &[u32]) -> Vec<u32> {
+    vector.iter().filter(|&&x| x != 0).copied().collect()
+}
+
 fn rand_in_range(min: usize, max: usize) -> usize {
     rand::thread_rng().gen_range(min..max)
 }
