@@ -70,7 +70,7 @@ impl Playable for Game {
                 KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
                     self.matrix.shift(code);
                 }
-                KeyCode::Char('q') | KeyCode::Esc => {
+                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('C') | KeyCode::Char('D') => {
                     self.state = State::GameOver;
                 }
                 _ => {}
