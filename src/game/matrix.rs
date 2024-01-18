@@ -184,18 +184,24 @@ impl MatrixTrait for Matrix {
 impl Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let width = self.width;
+        writeln!(f, "┌─────┬─────┬─────┬─────┐\r")?;
         for i in 0..width {
+            write!(f, "│")?;
             for j in 0..width {
                 let current = self.data[i][j];
                 if current == 0 {
-                    write!(f, "{:<5}", ".".to_string())?;
+                    write!(f, "  .  │")?;
                 } else {
-                    write!(f, "{:<5}", current)?;
+                    write!(f, "{:^5}│", current)?;
                 }
             }
-            write!(f, "\r\n")?;
+            writeln!(f, "\r")?;
+            if i != width - 1 {
+                writeln!(f, "├─────┼─────┼─────┼─────┤\r")?;
+            }
         }
 
+        writeln!(f, "└─────┴─────┴─────┴─────┘\r")?;
         Ok(())
     }
 }
