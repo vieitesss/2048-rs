@@ -76,7 +76,10 @@ impl Playable for Game {
             },
             Event::Mouse(_) => {}
             Event::Paste(_) => {}
-            Event::Resize(_, _) => {}
+            Event::Resize(_, _) => {
+                utils::clear_screen()?;
+                self.draw()?;
+            }
         }
 
         if self.matrix.changed {
