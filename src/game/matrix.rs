@@ -41,7 +41,7 @@ pub trait MatrixTrait {
 
 impl MatrixTrait for Matrix {
     fn spawn_number(&mut self) {
-        let cell = utils::get_random_empty_cell(&self.data, self.width);
+        let cell = utils::get_random_empty_cell(&self.data);
         let random_value = utils::get_random_bool(0.75);
 
         self.data[cell.0][cell.1] = if random_value { 2 } else { 4 };
@@ -165,7 +165,7 @@ impl MatrixTrait for Matrix {
     }
 
     fn has_no_moves(&self) -> bool {
-        if !utils::get_empty_cells(&self.data, self.width).is_empty() {
+        if !utils::get_empty_cells(&self.data).is_empty() {
             return false;
         }
 

@@ -17,7 +17,6 @@ mod matrix;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum State {
-    Starting,
     Running,
     GameOver,
 }

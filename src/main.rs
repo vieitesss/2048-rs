@@ -1,7 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-use std::io;
+use std::io::{self, Write};
 
 use game::{Game, Playable, State};
 

@@ -11,8 +11,8 @@ pub fn rev(vector: &[u32]) -> Vec<u32> {
     vector.iter().rev().copied().collect()
 }
 
-pub fn get_random_empty_cell(data: &[Vec<u32>], width: usize) -> (usize, usize) {
-    let empty_cells = get_empty_cells(data, width);
+pub fn get_random_empty_cell(data: &[Vec<u32>]) -> (usize, usize) {
+    let empty_cells = get_empty_cells(data);
 
     assert!(!empty_cells.is_empty());
 
@@ -25,7 +25,7 @@ pub fn get_random_bool(prob: f64) -> bool {
         .sample(&mut rand::thread_rng())
 }
 
-pub fn get_empty_cells(data: &[Vec<u32>], width: usize) -> Vec<(usize, usize)> {
+pub fn get_empty_cells(data: &[Vec<u32>]) -> Vec<(usize, usize)> {
     data.iter()
         .enumerate()
         .flat_map(|(i, row)| {
