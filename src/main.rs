@@ -14,7 +14,7 @@ fn main() -> io::Result<()> {
         game.handle_input()?
     }
 
-    writeln!(io::stdout(), "Game Over!")?;
+    writeln!(io::stdout(), "Game Over!\r")?;
     Game::exit()?;
 
     Ok(())
