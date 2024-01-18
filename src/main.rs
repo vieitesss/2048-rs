@@ -35,10 +35,11 @@ enum State {
 }
 
 trait GameTrait {
+    fn init(&mut self) -> io::Result<()>;
     fn update(&mut self) -> io::Result<()>;
     fn handle_input(&mut self) -> io::Result<()>;
     fn draw(&self);
-    fn exit(&self);
+    fn exit() -> io::Result<()>;
 }
 
 #[derive(Debug)]
@@ -49,18 +50,22 @@ struct Game {
 
 impl Game {
     fn new() -> Self {
-        let mut game = Self {
+        Self {
             matrix: Matrix::default(),
             state: State::Running,
-        };
-
-        game.update.unwrap();
-
-        game
+        }
     }
 }
 
 impl GameTrait for Game {
+    fn init(&mut self) -> io::Result<()> {
+        execute!(stdout(), Hide)?;
+        enable_raw_mode()?;
+        self.update()?;
+
+        Ok(())
+    }
+
     fn update(&mut self) -> io::Result<()> {
         utils::clear_screen()?;
         self.matrix.spawn_number();
@@ -101,8 +106,11 @@ impl GameTrait for Game {
         writeln!(stdout(), "{}\r", self).expect("could not write update");
     }
 
-    fn exit(&self) {
-        todo!()
+    fn exit() -> io::Result<()> {
+        execute!(stdout(), Show)?;
+        disable_raw_mode()?;
+
+        Ok(())
     }
 }
 
@@ -194,10 +202,10 @@ impl MatrixTrait for Matrix {
     }
 
     fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32> {
-        let mut non_zero: Vec<_> = numbers.iter().filter(|&&x| x != 0).copied().collect();
-        let count = non_zero.len();
+        let mut non_zeros = utils::get_non_zeros(numbers);
+        let count = non_zeros.len();
 
-        if non_zero.is_empty() || count == 1 {
+        if non_zeros.is_empty() || count == 1 {
             return numbers.to_vec();
         }
 
@@ -209,7 +217,7 @@ impl MatrixTrait for Matrix {
         match dir {
             KeyCode::Left | KeyCode::Up => {}
             KeyCode::Right | KeyCode::Down => {
-                non_zero = utils::rev(&non_zero);
+                non_zeros = utils::rev(&non_zeros);
                 revert = true;
             }
             _ => panic!("invalid direction"),
@@ -217,11 +225,11 @@ impl MatrixTrait for Matrix {
 
         let mut index = 0;
         while index < count {
-            if index == count - 1 || non_zero[index] != non_zero[index + 1] {
-                moved[index] = non_zero[index];
+            if index == count - 1 || non_zeros[index] != non_zeros[index + 1] {
+                moved[index] = non_zeros[index];
                 index += 1;
-            } else if non_zero[index] == non_zero[index + 1] {
-                moved[index] = non_zero[index] * 2;
+            } else if non_zeros[index] == non_zeros[index + 1] {
+                moved[index] = non_zeros[index] * 2;
                 index += 2;
             }
         }
@@ -234,7 +242,7 @@ impl MatrixTrait for Matrix {
     }
 
     fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32> {
-        let non_zeros: Vec<u32> = numbers.iter().filter(|&&x| x != 0).copied().collect();
+        let non_zeros = utils::get_non_zeros(numbers);
 
         if non_zeros.is_empty() {
             return numbers.to_vec();
@@ -257,17 +265,18 @@ impl MatrixTrait for Matrix {
     }
 
     fn has_no_moves(&self) -> bool {
-        if utils::get_empty_cells(&self.data, self.width).is_empty() {
+        if !utils::get_empty_cells(&self.data, self.width).is_empty() {
             return false;
         }
 
         let width = self.width;
         for i in 0..width {
             for j in 0..width {
-                if i < 3 && self.data[i][j] == self.data[i + 1][j] {
+                if i < width - 1 && self.data[i][j] == self.data[i + 1][j] {
+                    writeln!(stdout(), "No empty cells").expect("could not write update");
                     return false;
                 }
-                if j < 3 && self.data[i][j] == self.data[i][j + 1] {
+                if j < width - 1 && self.data[i][j] == self.data[i][j + 1] {
                     return false;
                 }
             }
@@ -297,22 +306,7 @@ impl Display for Matrix {
 }
 
 fn main() -> io::Result<()> {
-    execute!(stdout(), Hide)?;
-    enable_raw_mode()?;
-
     let mut game = Game::new();
-    // let mut matrix = Matrix::default();
-    // matrix.update().unwrap();
-
-    // let mut exit = false;
-    while game.state != State::GameOver {
-        // game.update()?;
-        game.handle_input()?;
-    }
-
-    execute!(stdout(), Show)?;
-    disable_raw_mode()
-}
 
     game.init()?;
 
