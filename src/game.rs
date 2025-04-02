@@ -1,13 +1,10 @@
 use crossterm::{
     cursor::{self, Hide, Show},
-    event::{read, Event, KeyCode, KeyEvent},
+    event::{read, Event, KeyCode, KeyEvent, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use std::{
-    fmt::Display,
-    io::{self, stdout, Write},
-};
+use std::io::{self, stdout, Write};
 
 use crate::utils;
 
@@ -65,12 +62,23 @@ impl Playable for Game {
         match read()? {
             Event::FocusGained => {}
             Event::FocusLost => {}
-            Event::Key(KeyEvent { code, .. }) => match code {
-                KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
-                    self.matrix.shift(code);
-                }
-                KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('C') | KeyCode::Char('D') => {
-                    self.state = State::GameOver;
+            Event::Key(KeyEvent {
+                code, modifiers, ..
+            }) => match modifiers {
+                KeyModifiers::NONE => match code {
+                    KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down => {
+                        self.matrix.shift(code);
+                    }
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.state = State::GameOver;
+                    }
+                    _ => {}
+                },
+                KeyModifiers::CONTROL => match code {
+                    KeyCode::Char('c') | KeyCode::Char('d') => {
+                        self.state = State::GameOver;
+                    },
+                    _ => {}
                 }
                 _ => {}
             },
