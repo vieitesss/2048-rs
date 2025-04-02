@@ -1,13 +1,11 @@
-use std::{
-    fmt::Display,
-    io::stdout,
-};
+use std::{fmt::Display, io::stdout};
 
 use crossterm::{cursor, event::KeyCode, execute};
 
 use crate::utils;
 
-#[derive(Debug)] pub struct Matrix {
+#[derive(Debug)]
+pub struct Matrix {
     pub data: Vec<Vec<u32>>,
     pub changed: bool,
     pub width: usize,

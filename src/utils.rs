@@ -1,6 +1,5 @@
 use crossterm::{
-    cursor,
-    queue,
+    cursor, queue,
     terminal::{Clear, ClearType},
 };
 use rand::distributions::{Bernoulli, Distribution};
@@ -46,11 +45,7 @@ fn rand_in_range(min: usize, max: usize) -> usize {
 }
 
 pub fn clear_screen() -> Result<(), io::Error> {
-    queue!(
-        stdout(),
-        Clear(ClearType::All),
-        cursor::MoveTo(0, 0),
-    )?;
+    queue!(stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0),)?;
 
     stdout().flush().expect("could not flush stdout");
 
