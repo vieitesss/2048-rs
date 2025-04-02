@@ -102,15 +102,14 @@ impl Playable for Game {
 
     fn draw(&self) -> io::Result<()> {
         let (columns, rows) = utils::get_window_size();
-        let bounds = self.matrix.get_width_on_draw();
-        let width = bounds.0 as u16;
-        let tall = bounds.1 as u16;
+        let (width, tall) = self.matrix.get_width_on_draw();
+        let (width, tall) = (width as u16, tall as u16);
         execute!(
             stdout(),
             cursor::MoveTo(columns / 2 - width / 2, rows / 2 - tall / 2)
         )?;
 
-        writeln!(stdout(), "{}\r", self).expect("could not write update");
+        writeln!(stdout(), "{}\r", self.matrix).expect("could not write update");
 
         Ok(())
     }
@@ -120,11 +119,5 @@ impl Playable for Game {
         disable_raw_mode()?;
 
         Ok(())
-    }
-}
-
-impl Display for Game {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.matrix)
     }
 }
