@@ -1,20 +1,13 @@
 use std::{
     fmt::Display,
-    io::{stdout, Write},
+    io::stdout,
 };
 
 use crossterm::{cursor, event::KeyCode, execute};
 
 use crate::utils;
 
-#[derive(Copy, Clone)]
-pub enum ZerosTo {
-    Right,
-    Left,
-}
-
-#[derive(Debug)]
-pub struct Matrix {
+#[derive(Debug)] pub struct Matrix {
     pub data: Vec<Vec<u32>>,
     pub changed: bool,
     pub width: usize,
@@ -33,7 +26,7 @@ impl Default for Matrix {
 impl Matrix {
     pub fn get_width_on_draw(&self) -> (usize, usize) {
         let width = self.width;
-        (width * 5 + width + 1, 2 * width + 1)
+        (6 * width + 1, 2 * width + 1)
     }
 
     fn move_to_next_line(&self) {
@@ -48,10 +41,9 @@ impl Matrix {
 
 pub trait MatrixTrait {
     fn spawn_number(&mut self);
-    fn update_vector(&self, vector: &[u32], dir: KeyCode, zeros_to: ZerosTo) -> (Vec<u32>, bool);
+    fn update_vector(&self, vector: &[u32], dir: KeyCode) -> (Vec<u32>, bool);
     fn shift(&mut self, dir: KeyCode);
     fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32>;
-    fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32>;
     fn has_no_moves(&self) -> bool;
 }
 
@@ -63,27 +55,20 @@ impl MatrixTrait for Matrix {
         self.data[cell.0][cell.1] = if random_value { 2 } else { 4 };
     }
 
-    fn update_vector(&self, vector: &[u32], dir: KeyCode, zeros_to: ZerosTo) -> (Vec<u32>, bool) {
+    fn update_vector(&self, vector: &[u32], dir: KeyCode) -> (Vec<u32>, bool) {
         let merged = self.merge(vector, dir);
-        let moved = self.move_zeros(&merged, zeros_to);
-        let changed = moved != *vector;
+        let changed = merged != *vector;
 
-        (moved, changed)
+        (merged, changed)
     }
 
     fn shift(&mut self, dir: KeyCode) {
         let width = self.width;
 
-        let zeros_to = match dir {
-            KeyCode::Up | KeyCode::Left => ZerosTo::Right,
-            KeyCode::Right | KeyCode::Down => ZerosTo::Left,
-            _ => panic!("invalid direction"),
-        };
-
         match dir {
             KeyCode::Right | KeyCode::Left => {
                 for i in 0..width {
-                    let (moved, changed) = self.update_vector(&self.data[i], dir, zeros_to);
+                    let (moved, changed) = self.update_vector(&self.data[i], dir);
 
                     if changed {
                         self.data[i] = moved;
@@ -92,18 +77,18 @@ impl MatrixTrait for Matrix {
                 }
             }
             KeyCode::Up | KeyCode::Down => {
-                for i in 0..width {
+                for j in 0..width {
                     let mut numbers = vec![0; width];
                     numbers
                         .iter_mut()
                         .enumerate()
-                        .for_each(|(j, x)| *x = self.data[j][i]);
+                        .for_each(|(i, x)| *x = self.data[i][j]);
 
-                    let (moved, changed) = self.update_vector(&numbers, dir, zeros_to);
+                    let (moved, changed) = self.update_vector(&numbers, dir);
 
                     if changed {
-                        for (j, _) in moved.iter().enumerate().take(width) {
-                            self.data[j][i] = moved[j];
+                        for (i, _) in moved.iter().enumerate() {
+                            self.data[i][j] = moved[i];
                         }
                         self.changed = true;
                     }
@@ -117,7 +102,7 @@ impl MatrixTrait for Matrix {
         let mut non_zeros = utils::get_non_zeros(numbers);
         let count = non_zeros.len();
 
-        if non_zeros.is_empty() || count == 1 {
+        if count == 0 {
             return numbers.to_vec();
         }
 
@@ -136,40 +121,20 @@ impl MatrixTrait for Matrix {
         }
 
         let mut index = 0;
-        while index < count {
-            if index == count - 1 || non_zeros[index] != non_zeros[index + 1] {
-                moved[index] = non_zeros[index];
-                index += 1;
-            } else if non_zeros[index] == non_zeros[index + 1] {
-                moved[index] = non_zeros[index] * 2;
-                index += 2;
+        let mut non_zero = 0;
+        while non_zero < count {
+            if non_zero == count - 1 || non_zeros[non_zero] != non_zeros[non_zero + 1] {
+                moved[index] = non_zeros[non_zero];
+                non_zero += 1;
+            } else {
+                moved[index] = non_zeros[non_zero] * 2;
+                non_zero += 2;
             }
+            index += 1;
         }
 
         if revert {
             moved = utils::rev(&moved);
-        }
-
-        moved
-    }
-
-    fn move_zeros(&self, numbers: &[u32], dir: ZerosTo) -> Vec<u32> {
-        let non_zeros = utils::get_non_zeros(numbers);
-
-        if non_zeros.is_empty() {
-            return numbers.to_vec();
-        }
-
-        let width = self.width;
-        let mut moved = vec![0; width];
-
-        match dir {
-            ZerosTo::Right => {
-                moved[..non_zeros.len()].copy_from_slice(&non_zeros[..]);
-            }
-            ZerosTo::Left => {
-                moved[(width - non_zeros.len())..width].copy_from_slice(&non_zeros[..]);
-            }
         }
 
         moved
@@ -184,7 +149,6 @@ impl MatrixTrait for Matrix {
         for i in 0..width {
             for j in 0..width {
                 if i < width - 1 && self.data[i][j] == self.data[i + 1][j] {
-                    writeln!(stdout(), "No empty cells").expect("could not write update");
                     return false;
                 }
                 if j < width - 1 && self.data[i][j] == self.data[i][j + 1] {
