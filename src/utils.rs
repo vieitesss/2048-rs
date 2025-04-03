@@ -6,10 +6,6 @@ use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
 use std::io::{self, stdout, Write};
 
-pub fn rev(vector: &[u32]) -> Vec<u32> {
-    vector.iter().rev().copied().collect()
-}
-
 pub fn get_random_empty_cell(data: &[Vec<u32>]) -> (usize, usize) {
     let empty_cells = get_empty_cells(data);
 
@@ -25,19 +21,29 @@ pub fn get_random_bool(prob: f64) -> bool {
 }
 
 pub fn get_empty_cells(data: &[Vec<u32>]) -> Vec<(usize, usize)> {
-    data.iter()
-        .enumerate()
-        .flat_map(|(i, row)| {
-            row.iter()
-                .enumerate()
-                .filter(|(_, &cell)| cell == 0)
-                .map(move |(j, _)| (i, j))
-        })
-        .collect()
+    let mut empty = Vec::new();
+
+    for (i, row) in data.iter().enumerate() {
+        for (j, &cell) in row.iter().enumerate() {
+            if cell == 0 {
+                empty.push((i, j))
+            }
+        }
+    }
+
+    empty
 }
 
 pub fn get_non_zeros(vector: &[u32]) -> Vec<u32> {
-    vector.iter().filter(|&&x| x != 0).copied().collect()
+    let mut non_zeros = Vec::new();
+
+    for &x in vector.iter() {
+        if x != 0 {
+            non_zeros.push(x);
+        }
+    }
+
+    non_zeros
 }
 
 fn rand_in_range(min: usize, max: usize) -> usize {

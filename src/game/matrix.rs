@@ -77,10 +77,9 @@ impl MatrixTrait for Matrix {
             KeyCode::Up | KeyCode::Down => {
                 for j in 0..width {
                     let mut numbers = vec![0; width];
-                    numbers
-                        .iter_mut()
-                        .enumerate()
-                        .for_each(|(i, x)| *x = self.data[i][j]);
+                    for i in 0..width {
+                        numbers[i] = self.data[i][j];
+                    }
 
                     let (moved, changed) = self.update_vector(&numbers, dir);
 
@@ -97,7 +96,7 @@ impl MatrixTrait for Matrix {
     }
 
     fn merge(&self, numbers: &[u32], dir: KeyCode) -> Vec<u32> {
-        let mut non_zeros = utils::get_non_zeros(numbers);
+        let non_zeros = utils::get_non_zeros(numbers);
         let count = non_zeros.len();
 
         if count == 0 {
@@ -107,32 +106,37 @@ impl MatrixTrait for Matrix {
         let width = self.width;
         let mut moved = vec![0; width];
 
-        // revert the non-zero numbers
-        let mut revert = false;
-        match dir {
-            KeyCode::Left | KeyCode::Up => {}
-            KeyCode::Right | KeyCode::Down => {
-                non_zeros = utils::rev(&non_zeros);
-                revert = true;
-            }
-            _ => panic!("invalid direction"),
-        }
+        let is_left_or_up = matches!(dir, KeyCode::Left | KeyCode::Up);
 
-        let mut index = 0;
-        let mut non_zero = 0;
-        while non_zero < count {
-            if non_zero == count - 1 || non_zeros[non_zero] != non_zeros[non_zero + 1] {
-                moved[index] = non_zeros[non_zero];
-                non_zero += 1;
-            } else {
-                moved[index] = non_zeros[non_zero] * 2;
-                non_zero += 2;
+        if is_left_or_up {
+            let mut index = 0;
+            let mut non_zero = 0;
+            while non_zero < count {
+                if non_zero == count - 1 || non_zeros[non_zero] != non_zeros[non_zero + 1] {
+                    moved[index] = non_zeros[non_zero];
+                    non_zero += 1;
+                } else {
+                    moved[index] = non_zeros[non_zero] * 2;
+                    non_zero += 2;
+                }
+                index += 1;
             }
-            index += 1;
-        }
-
-        if revert {
-            moved = utils::rev(&moved);
+        } else {
+            let mut index = width - 1;
+            let mut non_zero = count as isize - 1;
+            while non_zero >= 0 {
+                if non_zero == 0 || non_zeros[non_zero as usize] != non_zeros[non_zero as usize - 1]
+                {
+                    moved[index] = non_zeros[non_zero as usize];
+                    non_zero -= 1;
+                } else {
+                    moved[index] = non_zeros[non_zero as usize] * 2;
+                    non_zero -= 2;
+                }
+                if index > 0 {
+                    index -= 1;
+                }
+            }
         }
 
         moved
